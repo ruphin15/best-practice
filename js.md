@@ -158,6 +158,70 @@
   ```
 - Use promise and callback.
   ```js
+  // Don't
+  const fs = require('fs')
+  
+  function readJSON(filePath, callback) {
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        return callback(err)
+      }
+      
+      try {
+        callback(null, JSON.parse(data))
+      } catch(ex) {
+        callback(ex)
+      }
+    })
+  }
+  
+  readJSON('./package.json', (err, pkg) => { /* do stuff */ })
+  
+  // Do
+  const fs = require('fs')
+  const promisify = require('es6-promisify')
+  
+  const readFile = promisify(fs.readFile)
+  function readJSON(filePath) {
+    return readFile(filePath)
+      .then((data) => JSON.parse(data))
+  }
+  
+  readJSON('./package.json')
+    .then((pkg) => { /* do stuff */ })
+    .catch((err) => { /* do stuff */ } )
+  ```
+- Use async and await.
+  ```
+  const request = require('request-promise-native')
+
+  // Don't
+  function extractFromSite() {
+    return request({
+      uri: '...',
+      qs: { ... },
+      method: 'GET',
+      json: true
+    })
+    .then((body) => Object.keys(body.query.pages).map((key) =>
+      body.query.pages[key].extract
+    ))
+    .then((extract) => extract[0])
+    .catch((err) => { throw err })
+  }
+  
+  // Do
+  async function extractFromSite() {
+    let body
+    try {
+      body = await request({ /* same parameter as above */ })
+    } catch (err) {
+      throw err
+    }
+    
+    const extracts = Object.keys(body.query.pages).map((key) => body.query.pages[key].extract)
+    return extracts[0]
+  }
   ```
   
    
